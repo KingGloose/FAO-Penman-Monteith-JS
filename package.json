@@ -1,0 +1,15 @@
+{
+  "name": "fao-penman-monteith-js",
+  "version": "1.0.0",
+  "description": "> 背景",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mathjs": "^13.1.1"
+  }
+}

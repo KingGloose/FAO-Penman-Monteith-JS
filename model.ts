@@ -1,4 +1,7 @@
-const { create, all } = require("mathjs")
+import { create, all } from "mathjs"
+
+import { MODEL_MAP_VALUE, MODEL_VALUE } from "./types"
+import MODEL_PARAMS_ENUM from "./constant";
 
 const {
   add, // 加
@@ -18,11 +21,26 @@ const {
   precision: 20,
 });
 
-// 此处计算的值以天为单位
-class FAOPenmanMonteith {
+class baseFAO {
   // 中间变量
-  _COMPUTED_CENTER_PARAMS_ = {}; 
+  protected _MODEL_PARAMS_MAP_ = new Map<string, MODEL_MAP_VALUE>(); 
 
+  // 计算平均值
+  protected getAverage(value1: number, value2: number){
+    return sub(
+      add(value1, value2), 
+      2
+    )
+  }
+
+  // 将数据存入中间值
+  protected setModelParams(key: string, value: MODEL_VALUE) {
+    this._MODEL_PARAMS_MAP_.set(key, { ...MODEL_PARAMS_ENUM[key], value })
+  }
+}
+
+// 此处计算的值以天为单位
+class FAOPenmanMonteith extends baseFAO {
   constructor({ TMax, TMin, TPMMean, TMMean, TLMMean, height, p, us2, RHMax, RHMin, alt, timestamp, n, uz, As, Bs, alpha }) {
     // 每天的最高气温(℃) 示例数据: 20 -> 20℃
     this.TMax = TMax;
@@ -87,36 +105,26 @@ class FAOPenmanMonteith {
   }
 
   // ============================== 中间参数 ==============================
-  /*
-    计算日序数
-  */ 
-  Get_J(timestamp) {
-    const date = new Date(timestamp);
-    const date1 = new Date(date.getFullYear(), 0, 0).getTime();
-    const diff = date.getTime() - date1;
+  // 计算日序数 
+  Get_J(timestamp: number | string): number {
+    const currDate = new Date(timestamp);
+    const startDate = new Date(currDate.getFullYear(), 0, 0).getTime();
+    const diffTime = currDate.getTime() - startDate;
 
-    const _value = Math.floor(diff / (1000 * 60 * 60 * 24));
-    this._COMPUTED_CENTER_PARAMS_.day_sequence_number = _value;
-    return _value;
+    const value = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    super.setModelParams(MODEL_PARAMS_ENUM.DAY_SEQUENCE_NUMBER.key, value)
+    return value;
   }
 
-  /*
-    计算平均温度（℃）
-
-    公式: (TMax + TMin) / 2
-  */ 
-  Get_TMean(TMax, TMin) {
-    const _value = div(
-      add(bn(TMax), bn(TMin)), 
-      2
-    );
-    this._COMPUTED_CENTER_PARAMS_.average_temperature = _value;
-    return _value
+  // 计算平均温度（℃）
+  Get_TMean(TMax: number, TMin: number) {
+    const value = super.getAverage(TMax, TMin)
+    super.setModelParams(MODEL_PARAMS_ENUM.AVERAGE_TEMPERATURE.key, value)
+    return value
   }
 
+  // 根据站点海拔计算大气压强（kpa）
   /*
-    根据站点海拔计算大气压强（kpa）
-
     公式: 101.3 * ((1 - 0.0065 * height / 293) ^ 5.26)
 
     示例数据: 
@@ -125,20 +133,19 @@ class FAOPenmanMonteith {
 
     注意: 该公式假设大气温度为 20℃ 的情况简化的理想气体定律计算
   */ 
-  Get_P_ByHeight(height) {
-    const _value = mul(
+  Get_P_ByHeight(height: number) {
+    const value = mul(
       bn(101.3), 
       pow(
         div(sub(bn(293), mul(bn(0.0065), bn(height))),bn(293)), 
         bn(5.26))
     );
-    this._COMPUTED_CENTER_PARAMS_.atmospheric_pressure = _value
-    return _value;
+    super.setModelParams(MODEL_PARAMS_ENUM.ATMOSPHERIC_PRESSURE.key, value)
+    return value;
   }
 
+  // 空气温度T时的水汽压
   /*
-    空气温度T时的水汽压
-
     公式: 0.6108 * exp((17.27 * T) / (T + 237.3))
 
     示例数据:
@@ -518,4 +525,4 @@ class FAOPenmanMonteith {
 // console.log(new FAOPenmanMonteith().Get_P_ByHeight(300))
 
 
-module.exports = FAOPenmanMonteith;
+export default FAOPenmanMonteith
