@@ -1,5 +1,21 @@
-import { BigNumber, MathType } from "mathjs";
+import { BigNumber, MathJsInstance, MathType } from "mathjs";
 import FAOModelMapping from "./FAOModelMapping";
+import baseFAO from "./src/baseFAO";
+import FAOPenmanMonteith from "./src/dayFAO";
+
+type baseFAOType = typeof baseFAO;
+type FAOPenmanMonteithType = typeof FAOPenmanMonteith;
+export type FAOContext = InstanceType<baseFAOType> &
+  InstanceType<FAOPenmanMonteithType> & {
+    // mathjs 实例
+    math: MathJsInstance;
+
+    // 此次FAO计算使用的气象数据
+    atmo: atmosphereOptions;
+
+    // FAO计算所需的映射关系
+    fao: FAOModelMapping;
+  };
 
 export type atmosphereOptions = {
   /*
@@ -86,7 +102,7 @@ export type atmosphereOptions = {
     isRequired: true
     example:    2 -> 2m/s
   */
-  windSpeedAt2m: number;
+  windSpeedAt2m?: number;
 
   /*
     name:       x米高度处的风速
@@ -118,86 +134,6 @@ export type atmosphereOptions = {
     other:      用于计算日序值, 如果不传入就使用当前值
   */
   timestamp?: number;
-};
-
-export type FAOContext = {
-  /*
-    name:       是否为南北半球
-    isRequired: false
-    example:    true
-    other:      该单位影响弧度计算, 这里默认为北半球来做计算
-  */
-  isNorthern: boolean;
-
-  /*
-    name:       计算模式
-    isRequired: false
-    example:    1 -> 1day
-    other:      标记当前得计算模式, 默认为: 以天为单位得计算模式
-  */
-  mode: "day" | "hour";
-
-  /*
-    name:       太阳常数
-    isRequired: false
-    example:    0.082 MJm^-2min^-1
-  */
-  Gsc: number;
-
-  /*
-    name:       Stefan-Boltzmann常数
-    isRequired: false
-    example:    4.903e-9 MJK^-4m^-2day^-1
-  */
-  sigma: number;
-
-  /*
-    name:       as / bs
-    isRequired: false
-    example:    0.25 / 0.5
-  */
-  as: number;
-  bs: number;
-
-  /*
-    name:       反射率或冠层反射系数
-    isRequired: false
-    example:    0.23
-    other:      以草为假想的参考作物时，α值为0.23（无量纲）
-  */
-  alpha: number;
-
-  /*
-    name:       此次FAO计算使用的气象数据
-    isRequired: false
-    example:    { ... } 参考 atmosphereOptions 内部参数
-  */
-  atmosphereOptions: number;
-
-  /*
-    name:       FAO计算所需的映射关系
-    isRequired: true
-    example:    { ... } 参考 FAOModelMapping 内部参数
-  */
-  fao: FAOModelMapping;
-
-  // 数据缓存
-  cacheData: Map<string, CacheDataValueType>;
-
-  // mathjs 实例
-  math: MathJsInstance;
-
-  // 监测是否为字符串
-  isString: (data: any) => boolean;
-
-  // 监测是否为数字
-  isNumber: (data: any) => boolean;
-
-  // 计算两个数字的平均值
-  getAverage: (value1: number, value2: number) => string;
-
-  // 开始执行该映射key计算
-  executeFAOMapping: (faoObj: FaoMappingType, ...args: any[]) => any;
 };
 
 export type CacheDataValueType = {

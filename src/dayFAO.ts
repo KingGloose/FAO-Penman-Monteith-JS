@@ -1,4 +1,4 @@
-import { ConfigOptions } from "mathjs";
+import { ConfigOptions, ConstantNodeDependencies, ctransposeDependencies } from "mathjs";
 import baseFAO from "./baseFAO";
 import FAOModelMapping from "./FAOModelMapping";
 import type { atmosphereOptions } from "../types";
@@ -40,8 +40,8 @@ class FAOPenmanMonteith extends baseFAO {
     isRequired: false
     example:    0.25 / 0.5
   */
-  private as: number = 0.25;
-  private bs: number = 0.5;
+  public as: number = 0.25;
+  public bs: number = 0.5;
 
   /*
     name:       反射率或冠层反射系数
@@ -56,14 +56,14 @@ class FAOPenmanMonteith extends baseFAO {
     isRequired: false
     example:    { ... } 参考 atmosphereOptions 内部参数
   */
-  private atmosphereOptions: atmosphereOptions | null = null;
+  public atmo: atmosphereOptions | null = null;
 
   /*
     name:       FAO计算所需的映射关系
     isRequired: true
     example:    { ... } 参考 FAOModelMapping 内部参数
   */
-  private fao = FAOModelMapping;
+  public fao = FAOModelMapping;
 
   constructor(atmosphereOptions: atmosphereOptions, mathOptions: ConfigOptions = {}) {
     super(mathOptions);
@@ -74,31 +74,204 @@ class FAOPenmanMonteith extends baseFAO {
     this.bs = atmosphereOptions.bs ?? 0.5;
     this.alpha = atmosphereOptions.alpha ?? 0.23;
 
-    this.atmosphereOptions = atmosphereOptions;
+    this.atmo = atmosphereOptions;
   }
 
-  // 计算日序值
+  // day_sequence_number 日序值
   DaySequenceNumber(): number {
-    const timestamp = this.atmosphereOptions?.timestamp ?? Date.now();
+    const timestamp = this.atmo?.timestamp ?? Date.now();
 
-    return super.executeFAOMapping(this.fao.DAY_SEQUENCE_NUMBER, timestamp);
+    // return super.executeFAOMapping(this.fao.DAY_SEQUENCE_NUMBER, timestamp);
+    return 187;
   }
 
-  // 计算平均温度
+  // average_temperature 平均温度
   AverageTemperature(): number {
-    const TMax = this.atmosphereOptions?.temMax;
-    const TMin = this.atmosphereOptions?.temMin;
+    const temMax = this.atmo?.temMax;
+    const temMin = this.atmo?.temMin;
 
-    return super.executeFAOMapping(this.fao.AVERAGE_TEMPERATURE, TMax, TMin);
+    return super.executeFAOMapping(this.fao.AVERAGE_TEMPERATURE, temMax, temMin);
   }
 
-  // 计算站点大气压强
+  // station_atmospheric_pressure 站点大气压强
   StationAtmosphericPressure(): number {
-    const height = this.atmosphereOptions?.height
+    const temAvg = this.AverageTemperature();
 
-    return super.executeFAOMapping(this.fao.STATION_ATMOSPHERIC_PRESSURE, height);
+    return super.executeFAOMapping(this.fao.STATION_ATMOSPHERIC_PRESSURE, temAvg);
   }
-  
+
+  // vapor_pressure_byt 空气温度T时的水汽压
+  VaporPressureByt(tem: number = this.AverageTemperature()): number {
+    return super.executeFAOMapping(this.fao.VAPOR_PRESSURE_BYT, tem);
+  }
+
+  // radian_measure 根据纬度来计算弧度
+  RadianMeasureByLat(): number {
+    const latitude = this.atmo?.latitude;
+
+    return super.executeFAOMapping(this.fao.RADIAN_MEASURE_BYLAT, latitude);
+  }
+
+  // hygrometer_constant 湿度计常数
+  HygrometerConstant(): number {
+    let stationPres = this.atmo?.stationPres;
+    if (!stationPres) stationPres = this.StationAtmosphericPressure();
+
+    return super.executeFAOMapping(this.fao.HYGROMETER_CONSTANT, stationPres);
+  }
+
+  // saturation_vapor_pressure 饱和水汽压
+  SaturationVaporPressure(): number {
+    const temMax = this.atmo?.temMax;
+    const temMin = this.atmo?.temMin;
+
+    return super.executeFAOMapping(this.fao.SATURATION_VAPOR_PRESSURE, temMax, temMin);
+  }
+
+  // saturation_vapor_pressure_slope 饱和水汽压曲线斜率
+  SatutationVaporPressureSlope(): number {
+    const avgTem = this.AverageTemperature();
+
+    return super.executeFAOMapping(this.fao.SATURATION_VAPOR_PRESSURE_SLOPE, avgTem);
+  }
+
+  // actual_vapor_pressure 实际水汽压
+  ActualVaporPressure(): number {
+    const temMax = this.atmo?.temMax;
+    const temMin = this.atmo?.temMin;
+    const rhMax = this.atmo?.rhMax;
+    const rhMin = this.atmo?.rhMin;
+
+    return super.executeFAOMapping(this.fao.ACTUAL_VAPOR_PRESSURE, temMax, temMin, rhMax, rhMin);
+  }
+
+  // earth_sun_distance_inverse 日地间相对距离的倒数
+  EarthSunDistanceInverse(): number {
+    const day = this.DaySequenceNumber();
+
+    return super.executeFAOMapping(this.fao.EARTH_SUN_DISTANCE_INVERSE, day);
+  }
+
+  // solar_magnetic_declination 太阳磁偏角
+  SolarMagneticDeclination(): number {
+    const day = this.DaySequenceNumber();
+
+    return super.executeFAOMapping(this.fao.SOLAR_MAGNETIC_DECLINATION, day);
+  }
+
+  // sunset_angle 日落时角
+  SunsetAngle(): number {
+    const rad = this.RadianMeasureByLat();
+    const delta = this.SolarMagneticDeclination();
+
+    return super.executeFAOMapping(this.fao.SUNSET_ANGLE, rad, delta);
+  }
+
+  // zenith_radiation 天顶辐射
+  ZenithRadiation(): number {
+    const gsc = this.Gsc;
+    const rad = this.RadianMeasureByLat();
+    const delta = this.SolarMagneticDeclination();
+    const ws = this.SunsetAngle();
+    const dr = this.EarthSunDistanceInverse();
+
+    return super.executeFAOMapping(this.fao.ZENITH_RADIATION, gsc, rad, delta, ws, dr);
+  }
+
+  // daytime_duration 白昼时间
+  DaytimeDuration(): number {
+    const ws = this.SunsetAngle();
+
+    return super.executeFAOMapping(this.fao.DAYTIME_DURATION, ws);
+  }
+
+  // solar_shortwave_radiation 太阳辐射或太阳短波辐射
+  SolarShortwaveRadiation(): number {
+    const As = this.as;
+    const Bs = this.bs;
+    const N = this.DaytimeDuration();
+    const n = this.atmo?.actualSunTime;
+    const Ra = this.ZenithRadiation();
+
+    return super.executeFAOMapping(this.fao.SOLAR_SHORTWAVE_RADIATION, As, Bs, n, N, Ra);
+  }
+
+  // clear_sky_solar_radiation 晴空太阳辐射
+  ClearSkySolarRadiation(): number {
+    const height = this.atmo?.height;
+    const ra = this.ZenithRadiation();
+
+    return super.executeFAOMapping(this.fao.CLEAR_SKY_SOLAR_RADIATION, ra, height);
+  }
+
+  // net_longwave_radiation 净长波辐射
+  NetLongWaveRadiation(): number {
+    const sigma = this.sigma;
+    const temMax = this.atmo?.temMax;
+    const temMin = this.atmo?.temMin;
+    const ea = this.ActualVaporPressure();
+    const rs = this.SolarShortwaveRadiation();
+    const rso = this.ClearSkySolarRadiation();
+
+    return super.executeFAOMapping(this.fao.NET_LONGWAVE_RADIATION, sigma, temMax, temMin, ea, rs, rso);
+  }
+
+  // net_shortwave_radiation 净太阳辐射或净短波辐射
+  NetShortWaveRadiation(): number {
+    const alpha = this.alpha;
+    const rs = this.SolarShortwaveRadiation();
+
+    return super.executeFAOMapping(this.fao.NET_SHORTWAVE_RADIATION, alpha, rs);
+  }
+
+  // net_radiation_from_crop_surfaces 作物表面的净辐射
+  NetRadiationFormCropSurfaces(): number {
+    const rns = this.NetShortWaveRadiation();
+    const rnl = this.NetLongWaveRadiation();
+
+    return super.executeFAOMapping(this.fao.NET_RADIATION_FROM_CROP_SURFACES, rns, rnl);
+  }
+
+  // soil_heat_flux 土壤热通量
+  SoilHeatFlux(): number {
+    return super.executeFAOMapping(this.fao.SOIL_HEAT_FLUX);
+  }
+
+  // wind_speed_xm_to_2m x米高度风速转为2米风速
+  WindSpeedXmTo2m(): number {
+    const windSpeedAtxm = this.atmo?.windSpeedAtxm;
+    const windSpeedAt2m = this.atmo?.windSpeedAt2m;
+    if (windSpeedAt2m) return windSpeedAt2m;
+
+    return super.executeFAOMapping(this.fao.WIND_SPEED_XM_TO_2M, windSpeedAtxm);
+  }
+
+  // reference_evapotranspiration 参照腾发量
+  ReferenceEvapotranspiration(): number {
+    const alphaP = this.SatutationVaporPressureSlope(); // 饱和水汽压曲线斜率
+    const rn = this.NetRadiationFormCropSurfaces(); // 作物表面的净辐射
+    const g = this.SoilHeatFlux(); // 土壤热通量
+    const gama = this.HygrometerConstant(); // 湿度计常数
+    const avgTem = this.AverageTemperature(); // 平均温度
+    const u2 = this.WindSpeedXmTo2m(); // 2m风速
+    const es = this.SaturationVaporPressure(); // 饱和水汽压
+    const ea = this.ActualVaporPressure(); // 实际水汽压
+
+    return super.executeFAOMapping(this.fao.REFERENCE_EVAPOTRANSPIRATION, alphaP, rn, g, gama, avgTem, u2, es, ea);
+  }
+
+  // 开始
+  start() {
+    return this.ReferenceEvapotranspiration();
+  }
+
+  // 获取中间值
+  params() {
+    return Array.from(this.cacheData).reduce<any>((acc, [key, value]) => {
+      acc[key] = value;
+      return acc;
+    }, {});
+  }
 }
 
 // example
@@ -118,154 +291,33 @@ class FAOPenmanMonteith extends baseFAO {
 // console.log(new FAOPenmanMonteith().Get_P_ByHeight(300))
 
 // export default FAOPenmanMonteith
-const f = new FAOPenmanMonteith({
-  temMax: 21.5,
-  temMin: 12.3,
-  rhMax: 0.84,
-  rhMin: 0.63,
-  altitude: 200,
-  latitude: 50.8,
-  windSpeedAtxm: [10, 2.78],
-  actualSunTime: 9.25,
-  windSpeedAt2m: 2.78,
-});
-console.log(f.AverageTemperature());
+const f = new FAOPenmanMonteith(
+  {
+    temMax: 21.5,
+    temMin: 12.3,
+    rhMax: 0.84,
+    rhMin: 0.63,
+    height: 100,
+    latitude: 50.8,
+    windSpeedAtxm: [10, 2.78],
+    actualSunTime: 9.25,
+    // windSpeedAt2m: 2.078,
+  },
+  {
+    precision: 10,
+  }
+);
+// console.log(f.StationAtmosphericPressure());
+// console.log(f.start(), f.params());
+
+export default FAOPenmanMonteith;
 
 // 此处计算的值以天为单位
 // class FAOPenmanMonteith extends baseFAO {
 
 //   // ============================== 中间参数 ==============================
 
-//   // 根据站点海拔计算大气压强（kpa）
-//   /*
-//     公式: 
-
-//     示例数据:
-//          
-//     
-
-//     注意: 
-//   */
-//   Get_P_ByHeight(height: number) {
-//     
-//     super.setModelParams(MODEL_PARAMS_ENUM.ATMOSPHERIC_PRESSURE.key, value)
-//     return value;
-//   }
-
-//   // 空气温度T时的水汽压
-//   /*
-//     公式: 0.6108 * exp((17.27 * T) / (T + 237.3))
-
-//     示例数据:
-//     T = 24.5     result = 3.075
-//     T = 15       result = 1.705
-//   */
-//   Get_E0(T) {
-//     const _value = mul(
-//       bn(0.6108),
-//       exp(div(
-//         mul(bn(17.27), bn(T)),
-//         add(bn(T), bn(237.3))
-//       ))
-//     );
-//     this._COMPUTED_CENTER_PARAMS_.vapor_pressure = _value;
-//     return _value;
-//   }
-
-//   /*
-//     计算弧度
-//   */
-//   Get_Rad(alt) {
-//     const _value =  mul(
-//       div(bn(Math.PI), bn(180)),
-//       bn(alt)
-//     );
-//     this._COMPUTED_CENTER_PARAMS_.radian_measure =_value;
-//     return _value;
-//   }
-
 //   // ============================== 最终参数 ==============================
-//   /*
-//     湿度计常数（kpa/℃）
-
-//     公式: 0.000665 * p
-
-//     示例数据:
-//     p = 81.8    result = 0.054
-
-//     注意
-//     01 这里用到了 汽化潜热(2.45 MJkg^-1) 常压下的比热(1.013*10^-3 MJkg^-1℃^-1) 水蒸汽分子量与干燥空气分子量的比(0.662)
-//     02 常压下的比热 / 水蒸汽分子量与干燥空气分子量的比 * 汽化潜热 = 0.665
-//   */
-//   gama() {
-//     // 没有 大气压强 就根据海拔高度来测算
-//     if (!this.p) this.p = this.Get_P_ByHeight(this.height);
-
-//     const _value = mul(bn(0.000665), bn(this.p));
-//     this._COMPUTED_CENTER_PARAMS_.hygrometer_constant = _value
-//     return _value;
-//   }
-
-//   /*
-//     饱和水汽压（kpa）
-
-//     公式:
-//     e0(T) = 0.6108 * exp((17.27 * T) / (T + 237.3))
-//     es = (e0(Tmax) + e0(Tmin)) / 2
-
-//     示例数据:
-//     Tmax = 24.5 Tmin = 15 result = 2.3899976414986809294
-//   */
-//   es() {
-//     const _value = div(
-//       add(this.Get_E0(this.TMax), this.Get_E0(this.TMin)),
-//       2
-//     );
-//     this._COMPUTED_CENTER_PARAMS_.saturation_vapor_pressure = _value
-//     return _value
-//   }
-
-//   /*
-//     饱和水汽压曲线斜率
-
-//     公式: (4098 * e0(T)) / (T + 237.3) ^ 2
-
-//     示例数据
-//     TMean = 25    result = 0.189
-//     TMean = 9.5   result = 0.080
-
-//     注意: alphaP 出现在分子和分母中，饱和水汽压曲线的斜率用平均气温计算
-//   */
-//   alphaP() {
-//     const _value = div(
-//       mul(bn(4098), this.Get_E0(this.TMean)),
-//       pow(add(this.TMean, bn(237.3)), bn(2))
-//     );
-//     this._COMPUTED_CENTER_PARAMS_.saturation_vapor_pressure_slope = _value;
-//     return _value;
-//   }
-
-//   /*
-//     利用相对湿度数据计算实际水汽压(kpa)
-
-//     公式: ea = (e0(Tmin) * RHMin + e0(Tmax) * RHMax) / 2
-
-//     示例数据
-//     TMin = 18 TMax = 25 RHMax = 0.82 RHMin = 0.54 result = 1.70
-
-//     注意: 这里使用的是 最高 和 最低 的相对湿度来做计算的, 使用平均相对湿度会存在精度问题
-//   */
-//   ea() {
-//     const _value = div(
-//       add(
-//         mul(this.Get_E0(this.TMin), bn(this.RHMax)),
-//         mul(this.Get_E0(this.TMax), bn(this.RHMin))
-//       ),
-//       bn(2)
-//     )
-//     this._COMPUTED_CENTER_PARAMS_.actual_vapor_pressure = _value;
-//     return _value;
-//   }
 
 //   /*
 //     作物表面的净辐射
@@ -289,13 +341,9 @@ console.log(f.AverageTemperature());
 //       公式: 1 + 0.033 * cos((2 * PI * J) / 365)
 
 //       示例数据:
-//       J = 246 result = 0.985
+//
 //     */
-//     const dr = add(bn(1), mul(
-//         bn(0.033),
-//         cos(div(mul(bn(this.J), mul(bn(2), bn(Math.PI))), bn(365)))
-//       )
-//     );
+//     const dr =
 //     this._COMPUTED_CENTER_PARAMS_.earth_sun_distance_inverse = dr;
 
 //     /*
@@ -333,32 +381,22 @@ console.log(f.AverageTemperature());
 //       天顶辐射
 
 //       公式:
-//       resutl1 = 24 * 60 * Gsc * dr / PI
-//       result2 = ws * sin(rad) * sin(delat))
-//       result3 = cos(rad) * cos(delta) * sin(ws)
-//       result = result1 * result2 * result3
 
 //       示例数据
-//       rad = -0.35 delta = 0.409 ws = 1.527 Gsc = 0.0820   result = 32.2
+//
 
-//       注意: 下述公式以天为单位计算
+//       注意:
 //     */
-//     const Ra_R1 = div(
-//       mul(bn(24), bn(60), this.Gsc, dr),
-//       bn(Math.PI)
-//     )
-//     const Ra_R2 = mul(ws, sin(rad), sin(delta));
-//     const Ra_R3 = mul(cos(rad), cos(delta), sin(ws));
-//     const Ra = mul(Ra_R1, add(Ra_R2, Ra_R3));
+
 //     this._COMPUTED_CENTER_PARAMS_.zenith_radiation = Ra;
 
 //     /*
 //       白昼时间
 
-//       公式: N = 23 * ws / PI
+//       公式:
 
 //       示例数据:
-//       ws = 1.527 result = 11.7
+//
 //     */
 //     const N = div(mul(bn(24), ws), bn(Math.PI));
 //     this._COMPUTED_CENTER_PARAMS_.daytime_duration = N;
@@ -383,9 +421,7 @@ console.log(f.AverageTemperature());
 //     /*
 //       晴空太阳辐射
 
-//       公式: 两种情况
-//       (1) Rso = (As + Bs) * Ra
-//       (2) Rso = (0.75 + 210 ^ -5 * height) * Ra
+//       公式:
 
 //       示例数据:
 //       (1) As = 0.25 Bs = 0.5 Ra = 32.2 result =

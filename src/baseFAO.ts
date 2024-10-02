@@ -28,7 +28,7 @@ class baseFAO {
   }
 
   // 计算两个数字的平均值
-  protected getAverage(value1: number, value2: number): string {
+  public getAverage(value1: number, value2: number): string {
     if (!(this.isString(value1) || this.isNumber(value1))) {
       throw new Error("getAverage: value1 is not number or string");
     }
@@ -40,7 +40,7 @@ class baseFAO {
   }
 
   // 开始执行该映射key计算
-  protected executeFAOMapping(faoObj: FaoMappingType, ...args: any[]) {
+  public executeFAOMapping(faoObj: FaoMappingType, ...args: any[]) {
     const { key, name, unit } = faoObj;
 
     // 01 查询是否存在该值
