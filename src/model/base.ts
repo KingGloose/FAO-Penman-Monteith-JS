@@ -1,5 +1,5 @@
-import { create, all, ConfigOptions, MathJsInstance, isChain } from "mathjs";
-import { CacheDataValueType, FaoMappingType } from "../../types";
+import { create, all, ConfigOptions, MathJsInstance } from "mathjs";
+import { CacheDataValueType, FaoMappingType } from "../types";
 
 class baseFAO {
   // 数据缓存

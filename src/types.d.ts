@@ -1,7 +1,7 @@
 import { BigNumber, MathJsInstance, MathType } from "mathjs";
 import FAOModelMapping from "./FAOModelMapping";
-import baseFAO from "./src/model/baseFAO";
-import FAOPenmanMonteith from "./src/model/dayFAO";
+import baseFAO from "./model/base";
+import FAOPenmanMonteith from "./model/day";
 
 type baseFAOType = typeof baseFAO;
 type FAOPenmanMonteithType = typeof FAOPenmanMonteith;

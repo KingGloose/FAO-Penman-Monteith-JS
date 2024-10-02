@@ -1,11 +1,4 @@
-import { FAOContext } from "../../types";
-
-/*
-  INFO: 该部分主要负责公式模块
-  01 公式的存在 key, 这个 key 用作缓存使用
-  02 name 表示该公式的名称
-  03 unit 表示公式的单位
-*/
+import { FAOContext } from "../types";
 
 export default {
   /*

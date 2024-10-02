@@ -1,7 +1,7 @@
-import { ConfigOptions, ConstantNodeDependencies, ctransposeDependencies } from "mathjs";
-import baseFAO from "./baseFAO";
+import { ConfigOptions } from "mathjs";
+import baseFAO from "./base";
 import FAOModelMapping from "../map/faoMap";
-import type { atmosphereOptions } from "../../types";
+import type { atmosphereOptions } from "../types";
 
 // 计算每日得模型值
 // 添加参数是否缓存该值
@@ -274,25 +274,5 @@ class FAOPenmanMonteith extends baseFAO {
     }, {});
   }
 }
-
-
-const f = new FAOPenmanMonteith(
-  {
-    temMax: 21.5,
-    temMin: 12.3,
-    rhMax: 0.84,
-    rhMin: 0.63,
-    height: 100,
-    latitude: 50.8,
-    windSpeedAtxm: [10, 2.78],
-    actualSunTime: 9.25,
-    // windSpeedAt2m: 2.078,
-  },
-  {
-    precision: 10,
-  }
-);
-// console.log(f.NetShortWaveRadiation());
-console.log(f.start(), f.params());
 
 export default FAOPenmanMonteith;
