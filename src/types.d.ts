@@ -34,21 +34,21 @@ export type atmosphereOptions = {
 
   /*
     name:       前一个月的平均气温
-    isRequired: true
+    isRequired: false
     example:    18.5 -> 18.5℃
   */
   avgTemPrevMonth?: number;
 
   /*
     name:       这个月的平均气温
-    isRequired: true
+    isRequired: false
     example:    18.5 -> 18.5℃
   */
   avgTemCurrMonth?: number;
 
   /*
     name:       去年中这个月的后一个月得平均温度
-    isRequired: true
+    isRequired: false
     example:    18.5 -> 18.5℃
     other:      比如今年为2024年6月, 那么就需要2023年的5月的数据
   */

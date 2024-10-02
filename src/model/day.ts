@@ -267,7 +267,7 @@ class FAOPenmanMonteith extends baseFAO {
   }
 
   // 获取中间值
-  params() {
+  getCache() {
     return Array.from(this.cacheData).reduce<any>((acc, [key, value]) => {
       acc[key] = value;
       return acc;
