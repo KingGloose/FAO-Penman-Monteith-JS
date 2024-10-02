@@ -345,7 +345,13 @@ class FAOPenmanMonteith {
       示例数据:
       ws = 1.527 result = 11.7
     */
-    const N = div(mul(bn(24), ws), bn(Math.PI));
+    const N = div(
+      mul(
+        bn(24), 
+        ws
+      ), 
+      bn(Math.PI)
+    );
     this._COMPUTED_CENTER_PARAMS_.daytime_duration = N;
 
     /*
@@ -515,7 +521,7 @@ const f = new FAOPenmanMonteith({
 })
 f.J = 187
 
-console.log(f)
+console.log(f.done(), f.params())
 
 
 module.exports = FAOPenmanMonteith;

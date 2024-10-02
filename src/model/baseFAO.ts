@@ -1,5 +1,5 @@
-import { create, all, ConfigOptions, MathJsInstance } from "mathjs";
-import { CacheDataValueType, FaoMappingType } from "../types";
+import { create, all, ConfigOptions, MathJsInstance, isChain } from "mathjs";
+import { CacheDataValueType, FaoMappingType } from "../../types";
 
 class baseFAO {
   // 数据缓存
@@ -40,17 +40,26 @@ class baseFAO {
   }
 
   // 开始执行该映射key计算
-  public executeFAOMapping(faoObj: FaoMappingType, ...args: any[]) {
-    const { key, name, unit } = faoObj;
+  public executeFAOMapping(faoObj: FaoMappingType, isCache: boolean = true) {
+    const _this = this; // 缓存外部 this
 
-    // 01 查询是否存在该值
-    if (this.cacheData.has(key)) return this.cacheData.get(key)!.value;
+    return function (...args: any[]) {
+      const { key, name, unit } = faoObj;
 
-    // 02 执行计算
-    const ctx = this;
-    const value = faoObj.fn.call(this, ctx, ...args);
-    this.cacheData.set(key, { key, name, unit, value });
-    return value;
+      // 01 查询是否存在该值
+      if (_this.cacheData.has(key)) {
+        return _this.cacheData.get(key)!.value;
+      }
+
+      // 02 执行计算
+      const ctx = _this;
+      const value = faoObj.fn.call(_this, ctx, ...args);
+
+      // 03 执行缓存
+      if (isCache) _this.cacheData.set(key, { key, name, unit, value });
+
+      return value;
+    };
   }
 }
 

@@ -1,10 +1,10 @@
-import { FAOContext } from "../types";
+import { FAOContext } from "../../types";
 
 /*
-  INFO:
-  01 如果想添加公式, 请在该对象中添加
-
-
+  INFO: 该部分主要负责公式模块
+  01 公式的存在 key, 这个 key 用作缓存使用
+  02 name 表示该公式的名称
+  03 unit 表示公式的单位
 */
 
 export default {
@@ -78,12 +78,8 @@ export default {
       return mul(
         bn(101.3), 
         pow(
-          div(
-            sub(bn(293), mul(bn(0.0065), bn(height))), 
-            bn(293) 
-          ), 
-          bn(5.26)
-        )
+          div(sub(bn(293), mul(bn(0.0065), bn(height))),bn(293)), 
+          bn(5.26))
       );
     },
   },
@@ -195,7 +191,8 @@ export default {
         add(
           ctx.VaporPressureByt(temMax), 
           ctx.VaporPressureByt(temMin)
-        ), 2
+        ), 
+        2
       );
     },
   },
@@ -577,7 +574,7 @@ export default {
     -----------------------------------------------------------------------------------------
   */
   NET_SHORTWAVE_RADIATION: {
-    key: "net_radiation_from_crop_surfaces",
+    key: "net_shortwave_radiation",
     name: "净太阳辐射或净短波辐射",
     unit: "MJ/day",
     fn(ctx: FAOContext, alpha: number, Rs: number) {
