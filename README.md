@@ -1,6 +1,6 @@
 # 介绍
 
-该库使用 JavaScript 实现对 FAOPenmanMonteith 高精度的模拟运算 [ [Penman Monteith公式 - 维基百科，自由的百科全书 (wikipedia.org)](https://zh.wikipedia.org/wiki/Penman_Monteith公式) ]，目前公式来源基于书籍 **作物腾发量 - 作物需水量计算指南 **来做理论实现
+该库使用 JavaScript 实现对 FAOPenmanMonteith 高精度的模拟运算 [ [Penman Monteith公式 - 维基百科，自由的百科全书 (wikipedia.org)](https://zh.wikipedia.org/wiki/Penman_Monteith公式) ]，目前公式来源基于书籍 **作物腾发量 - 作物需水量计算指南** 来做理论实现
 
 
 
