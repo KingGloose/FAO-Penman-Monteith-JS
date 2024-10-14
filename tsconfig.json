@@ -1,15 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es2016",
-    "module": "ESNext",
-    "declaration": true,
-    "declarationDir": "./dist/types",
-    "outDir": "dist",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "moduleResolution": "NodeNext"
+    "target": "ES6", // 编译到 ES6
+    "module": "ESNext", // 使用 ESNext 模块，之后 Webpack 会处理
+    "moduleResolution": "node", // 模块解析策略
+    "declaration": true, // 生成 .d.ts 类型文件
+    "declarationDir": "./dist/types", // 类型文件输出目录
+    "outDir": "./dist", // 编译后的 JS 文件输出目录
+    "strict": true, // 开启严格模式
+    "esModuleInterop": true, // 兼容 ES6 模块导入
+    "skipLibCheck": true, // 跳过库文件类型检查
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["./src/**/*", "src/types.d.ts"]
+  "include": ["./src/**/*", "src/types.d.ts"],
+  "exclude": ["node_modules", "dist"] // 排除编译后的文件
 }

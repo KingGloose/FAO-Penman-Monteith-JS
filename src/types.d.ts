@@ -1,5 +1,5 @@
 import { BigNumber, MathJsInstance, MathType } from "mathjs";
-import FAOModelMapping from "./FAOModelMapping";
+import FAOModelMapping from "./map/faoMap";
 import baseFAO from "./model/base";
 import FAOPenmanMonteith from "./model/day";
 
@@ -14,7 +14,7 @@ export type FAOContext = InstanceType<baseFAOType> &
     atmo: atmosphereOptions;
 
     // FAO计算所需的映射关系
-    fao: FAOModelMapping;
+    fao: any;
   };
 
 export type atmosphereOptions = {

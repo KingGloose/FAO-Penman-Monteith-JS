@@ -1,7 +1,7 @@
 import FAOPenmanMonteith from "./model/day";
 export default FAOPenmanMonteith;
 
-// example 
+// example
 // result: 3.9
 // const f = new FAOPenmanMonteith(
 //   {
