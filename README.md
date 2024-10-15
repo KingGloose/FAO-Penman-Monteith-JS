@@ -114,6 +114,8 @@ f.executeFAOMapping(faoObj, isCache)(...args)
 
 # 未来规划
 
+如果您是相关专业的，可以提供所须公式，可以加我 wx: zjh20241010 不胜感激
+
 ## 已完成
 
 1、缺少气象数值时存在替补 ET0 计算  （√）
@@ -129,3 +131,6 @@ f.executeFAOMapping(faoObj, isCache)(...args)
 2、还存在例如 kc、etc 的计算
 
 3、实现自动化测试，给个excel或者其他格式写入数据自动输出数据，并完成报表
+
+
+
